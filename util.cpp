@@ -53,4 +53,19 @@ std::string trim(std::string &s, const std::string ws)
   return s;
 }
 
-
+void split_1st(std::string &r1, std::string &r2, std::string s, char c)
+{
+  size_t pos = s.find_first_of(c);
+  if (pos == std::string::npos)
+  {
+    r1 = s;
+    r2 = {};
+  }
+  else
+  {
+    r1 = s.substr(0, pos);
+    trim(r1);
+    r2 = s.substr(pos);
+    trim(r2);
+  }
+}

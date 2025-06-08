@@ -94,7 +94,8 @@ std::string options::version(bool traceability)
   if (!app_info.decoration.empty())
     vers += ' ' + app_info.decoration;
 
-  if (traceability) {
+  if (traceability)
+  {
     if (!app_info.commit.empty())
       vers += "\nCommit " + app_info.commit;
     if (!app_info.created_at.empty())
@@ -222,15 +223,18 @@ void options::add_default()
         [this](s_opt_params &) -> void {
           // Could use ncurse (pdcurses.org) to define max_width as the console window width ... Defaulting to 100
           usage(std::cout, 100);
-          exit(0);
+          if (!imode)
+            exit(0);
         },
         "Display this message and exit."));
-  if (no_v) {
+  if (no_v)
+  {
     opt_inf.push_front(option_info(
         'v', "version",
         [this](s_opt_params &) -> void {
           version(std::cout);
-          exit(0);
+          if (!imode)
+            exit(0);
         },
         "Output version information and exit."));
 
@@ -238,7 +242,8 @@ void options::add_default()
         0, "traceability",
         [this](s_opt_params &) -> void {
           version(std::cout, true);
-          exit(0);
+          if (!imode)
+            exit(0);
         },
         "SECRET_OPTION provided for traceability when needed (debug)."));
   }
@@ -285,14 +290,14 @@ void options::run_opt(char short_name)
 void options::run_opt(std::string long_name)
 {
   for (auto opt : opt_inf)
-    if (opt.long_name == long_name) {
+    if (opt.long_name == long_name)
+    {
       run_opt(opt);
       return;
     }
 
   std::cerr << "Uknown long option '--" << long_name << "', ignoring it." << std::endl;
 }
-
 
 void options::parse()
 {
@@ -349,22 +354,46 @@ void options::parse()
 
 void options::parse(std::istream &is)
 {
-  std::string s;
+  imode = true;
+
+  std::string s, r1, r2;
+  s_opt_params op;
+
   while (std::getline(is, s))
   {
     trim(s);
-    if (s.size() == 1 || isspace(s[1])) run_opt(s[0]);
-    else run_opt(s);
+    if (s.empty())
+      continue;
+    split_1st(r1, r2, s);
+
+    for (auto opt : opt_inf)
+    {
+      if (r1[0] == opt.short_name || r1 == opt.long_name)
+      {
+        op = {opt.short_name, opt.long_name, r2, 0};
+        if (r2.empty() && opt.mode == e_option_mode::required)
+        {
+          std::cerr << "Missing argument to '" << opt.short_name << '/' << opt.long_name << "', ignoring this command." << std::endl;
+        }
+        else
+        {
+          opt.func(op);
+        }
+        break;
+      }
+    }
   }
+
+  imode = false;
 }
 
 void options::parse(std::filesystem::path path)
 {
   std::ifstream file(path);
-  if (file) parse(file);
+  if (file)
+    parse(file);
   file.close();
 }
-
 
 // From Freak, see :
 // https://stackoverflow.com/questions/152016/detecting-cpu-architecture-compile-time

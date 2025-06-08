@@ -47,7 +47,6 @@ ${GCC_TARGET} : version.h ${OBJS}
 format :
 	@echo "Formatting all the .cpp and .h files with clang"
 	@${CLANG_FORMAT} *.cpp *.h
-	@${CLANG_FORMAT} other_srcs/*.cpp other_srcs/*.c
 
 
 cfg:
