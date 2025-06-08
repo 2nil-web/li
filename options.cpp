@@ -9,6 +9,10 @@
 #include <thread>
 #include <vector>
 
+#ifdef _WIN32
+#include <conio.h>
+#endif
+
 #include "options.h"
 #include "util.h"
 #include "version.h"
@@ -432,6 +436,43 @@ void options::parse()
   }
 }
 
+// Make Windows behave as Linux with Control-D in stdin
+bool my_getline(std::istream &is, std::string &s)
+{
+  char delim;
+#ifndef _WIN32
+  delim = '\n';
+#else
+  delim = '\r';
+
+  if (&is == &std::cin)
+  {
+    int ch;
+
+    s = {};
+    for (;;)
+    {
+      ch = _getch();
+      if (s.empty() && ch == 4)
+        return false; // Control-D detected
+      if ((char)ch == delim)
+      {
+        std::cout << std::endl;
+        return true;
+      }
+      if (ch >= ' ')
+        s += ch;
+      std::cout << (char)ch << std::flush;
+    }
+  }
+  else
+#endif
+  if (std::getline(is, s, delim))
+    return true;
+
+  return false;
+}
+
 void options::parse(std::istream &is)
 {
   imode = true;
@@ -443,11 +484,13 @@ void options::parse(std::istream &is)
   for (;;)
   {
     std::cout << prompt;
-    if (!std::getline(is, s))
+
+    if (!my_getline(is, s))
       break;
 
     trim(s);
-    if (!s.empty())
+
+    if (!s.empty() && s[0] > ' ')
     {
       split_1st(r1, r2, s);
 
