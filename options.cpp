@@ -135,7 +135,7 @@ std::string in_frame(std::string s, std::string ss, size_t l = 80)
   return res;
 }
 
-std::string options::usage(size_t max_width)
+std::string options::usage_opt(size_t max_width)
 {
   std::string usage = version() + '\n';
 
@@ -199,6 +199,78 @@ std::string options::usage(size_t max_width)
   return usage;
 }
 
+std::string options::usage_int(size_t max_width)
+{
+  std::string usage = {};
+
+  usage += "Available commands/and their shortcut\n";
+
+  size_t longest_opt = 0;
+  for (auto opt : opt_inf)
+  {
+    if (!opt.help.starts_with("SECRET_OPTION"))
+    {
+      if (opt.short_name != 0 || !opt.long_name.empty())
+      {
+        size_t curr_l = opt.long_name.size() + 3;
+        if (opt.mode == optional)
+          curr_l += 6;
+        if (opt.mode == required)
+          curr_l += 4;
+        if (curr_l > longest_opt)
+          longest_opt = curr_l;
+      }
+    }
+  }
+
+  bool first = true;
+  for (auto opt : opt_inf)
+  {
+    if (!opt.help.starts_with("SECRET_OPTION"))
+    {
+      if (!first)
+        usage += '\n';
+      else
+        first = false;
+
+      std::string opt_s = {};
+      if (opt.short_name != 0 || !opt.long_name.empty())
+      {
+        if (!opt.long_name.empty())
+        {
+          opt_s += opt.long_name;
+        }
+
+        if (opt.short_name != 0)
+        {
+          opt_s += "/" + std::string(1, opt.short_name);
+        }
+
+        if (opt.mode == optional)
+          opt_s += " [ARG]";
+        if (opt.mode == required)
+          opt_s += " ARG";
+        usage += opt_s + std::string(longest_opt - opt_s.size(), ' ');
+      }
+
+      if (max_width > 0)
+        usage += in_frame(opt.help, '\n' + std::string(longest_opt + 1, ' '), max_width - longest_opt);
+      else
+        usage += opt.help;
+    }
+  }
+
+  return usage;
+}
+
+std::string options::usage(size_t max_width)
+{
+  if (imode)
+    return usage_int(max_width);
+  else
+    return usage_opt(max_width);
+}
+
 std::ostream &options::usage(std::ostream &os, size_t max_width)
 {
   os << usage(max_width) << std::endl;
@@ -226,7 +298,7 @@ void options::add_default()
           if (!imode)
             exit(0);
         },
-        "Display this message and exit."));
+        "Display this message (And exit if not in interpreted mode)."));
   if (no_v)
   {
     opt_inf.push_front(option_info(
@@ -236,7 +308,7 @@ void options::add_default()
           if (!imode)
             exit(0);
         },
-        "Output version information and exit."));
+        "Output version information (And exit if not in interpreted mode)."));
 
     opt_inf.push_front(option_info(
         0, "traceability",
@@ -247,6 +319,14 @@ void options::add_default()
         },
         "SECRET_OPTION provided for traceability when needed (debug)."));
   }
+
+  opt_inf.push_front(option_info(
+      'p', "prompt",
+      [this](s_opt_params &p) -> void {
+        trim(p.val, "\"");
+        prompt = p.val;
+      },
+      "Change the interpreted mode prompt (default is '>')."));
 }
 
 void options::run_opt(option_info opt)
@@ -358,28 +438,42 @@ void options::parse(std::istream &is)
 
   std::string s, r1, r2;
   s_opt_params op;
+  bool unknown_cmd;
 
-  while (std::getline(is, s))
+  for (;;)
   {
-    trim(s);
-    if (s.empty())
-      continue;
-    split_1st(r1, r2, s);
+    std::cout << prompt;
+    if (!std::getline(is, s))
+      break;
 
-    for (auto opt : opt_inf)
+    trim(s);
+    if (!s.empty())
     {
-      if (r1[0] == opt.short_name || r1 == opt.long_name)
+      split_1st(r1, r2, s);
+
+      unknown_cmd = true;
+      for (auto opt : opt_inf)
       {
-        op = {opt.short_name, opt.long_name, r2, 0};
-        if (r2.empty() && opt.mode == e_option_mode::required)
+        if (r1[0] == opt.short_name || r1 == opt.long_name)
         {
-          std::cerr << "Missing argument to '" << opt.short_name << '/' << opt.long_name << "', ignoring this command." << std::endl;
+          op = {opt.short_name, opt.long_name, r2, 0};
+          if (r2.empty() && opt.mode == e_option_mode::required)
+          {
+            std::cerr << "Missing argument to '" << opt.short_name << '/' << opt.long_name << "', ignoring this command." << std::endl;
+          }
+          else
+          {
+            opt.func(op);
+          }
+
+          unknown_cmd = false;
+          break;
         }
-        else
-        {
-          opt.func(op);
-        }
-        break;
+      }
+
+      if (unknown_cmd)
+      {
+        std::cerr << "Unknown command '" << s << "', ignoring it." << std::endl;
       }
     }
   }

@@ -20,13 +20,13 @@ int main(int argc, char **argv, char **)
                 option_info(
                     'i', "interp", [&myopt](s_opt_params &) -> void { myopt.parse(std::cin); }, "Enter interpreter mode.", no_arg, option),
                 option_info(
-                    'e', "println", [](s_opt_params &p) -> void { std::cout << p.val << std::endl; }, "Echo the provided paramete(r)s and add a carriage return.", optional, interp),
+                    'e', "println", [](s_opt_params &p) -> void { std::cout << trim(p.val, "\"") << std::endl; }, "Echo the provided paramete(r)s and add a carriage return.", optional, interp),
                 option_info(
-                    'p', "print", [](s_opt_params &p) -> void { std::cout << p.val; }, "Echo the provided paramete(r)s without adding a carriage return.", optional, interp),
+                    'w', "print", [](s_opt_params &p) -> void { std::cout << trim(p.val, "\""); }, "Echo the provided paramete(r)s without adding a carriage return.", optional, interp),
                 option_info(
                     'x', "exit", [](s_opt_params &) -> void { exit(0); }, "Exit from interpreted mode.", no_arg, interp),
                 option_info(
-                    'q', "quit", [](s_opt_params &) -> void { exit(0); }, "Alias for x/exit.", no_arg, interp),
+                    'q', "quit", [](s_opt_params &) -> void { exit(0); }, "Alias for exit.", no_arg, interp),
             });
 
   myopt.parse();

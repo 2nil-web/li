@@ -75,12 +75,15 @@ public:
   std::string get_build();
 
 private:
+  std::string prompt = "> ";
   bool imode = false;
   arg_dq p_args = {};
   arg_iter p_arg_it;
   void run_opt(char short_name);
   void run_opt(std::string long_name);
   void run_opt(option_info opt);
+  std::string usage_opt(size_t max_width = 0);
+  std::string usage_int(size_t max_width = 0);
   void add_default();
   friend std::ostream &operator<<(std::ostream &, options &);
 };
