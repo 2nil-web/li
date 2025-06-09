@@ -65,7 +65,7 @@ void split_1st(std::string &r1, std::string &r2, std::string s, char c)
   {
     r1 = s.substr(0, pos);
     trim(r1);
-    r2 = s.substr(pos);
+    r2 = s.substr(pos + 1);
     trim(r2);
   }
 }
