@@ -24,7 +24,9 @@ bool setvar(std::string expr)
     return false;
 
   trim(val, "\"");
-  sym_table[var] = val;
+  if (my_getenv(var).empty() || !my_setenv(var, val))
+    sym_table[var] = val;
+
   return true;
 }
 
@@ -35,6 +37,23 @@ bool unsetvar(std::string var)
     return false;
   sym_table.erase(var);
   return true;
+}
+
+std::string ret_expansion(std::string var, char c)
+{
+  std::string val, ret = {};
+
+  if (!var.empty())
+  {
+    val = my_getenv(var);
+    if (val.empty())
+      ret += sym_table[var];
+    else
+      ret += val;
+  }
+
+  ret += c;
+  return ret;
 }
 
 std::string expand(std::string expr)
@@ -49,19 +68,38 @@ std::string expand(std::string expr)
       if (!res.empty() && res.back() == '$')
         continue;
 
-      std::string var = {};
-      for (;;)
+      std::string var = {}, val = {};
+
+      // Look for var invocation between braces, in the form '${var}'
+      if (expr[i + 1] == '{')
       {
         i++;
-        if (!isalpha(expr[i]) || isspace(expr[i]) || i >= expr.size())
+        for (;;)
         {
-          if (!var.empty())
-            res += sym_table[var];
-          res += expr[i];
-          break;
-        }
+          i++;
+          if (expr[i] == '}' || i >= expr.size())
+          {
+            res += ret_expansion(var, expr[i]);
+            break;
+          }
 
-        var += expr[i];
+          var += expr[i];
+        }
+      }
+      // Look for 'simple' var invocation in the form '$var'
+      else
+      {
+        for (;;)
+        {
+          i++;
+          if (!isalpha(expr[i]) || isspace(expr[i]) || i >= expr.size())
+          {
+            res += ret_expansion(var, expr[i]);
+            break;
+          }
+
+          var += expr[i];
+        }
       }
     }
     else

@@ -1,6 +1,9 @@
 
 #include <iostream>
 #include <string>
+#ifdef _WIN32
+#include <windows.h>
+#endif
 
 #include "util.h"
 
@@ -68,4 +71,42 @@ void split_1st(std::string &r1, std::string &r2, std::string s, char c)
     r2 = s.substr(pos + 1);
     trim(r2);
   }
+}
+
+// Get env var val if exists else empty string
+std::string my_getenv(const std::string var)
+{
+  char *pVal = nullptr;
+  std::string val = {};
+
+#ifdef _WIN32
+  DWORD vl = GetEnvironmentVariable(var.c_str(), NULL, 0);
+  if (vl > 0)
+  {
+    pVal = new char[vl + 1];
+    GetEnvironmentVariable(var.c_str(), pVal, vl);
+    if (pVal != nullptr)
+    {
+      val = pVal;
+      delete[] pVal;
+    }
+  }
+#else
+  pVal = getenv(var.c_str());
+  if (pVal != nullptr)
+    val = pVal;
+#endif
+
+  return val;
+}
+
+// Set env var
+// Return true if OK else false
+bool my_setenv(const std::string var, const std::string val)
+{
+#ifdef _WIN32
+  return SetEnvironmentVariable(var.c_str(), val.c_str()) != 0;
+#else
+  return setenv((char *)var.c_str(), (char *)val.c_str(), 1) == 0;
+#endif
 }

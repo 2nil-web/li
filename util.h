@@ -8,4 +8,8 @@ std::string ltrim(std::string &s, const std::string ws = " \t\n\r\f\v");
 std::string trim(std::string &s, const std::string ws = " \t\n\r\f\v");
 
 void split_1st(std::string &, std::string &, std::string, char c = ' ');
+
+std::string my_getenv(const std::string var);
+bool my_setenv(const std::string var, const std::string val);
+
 #endif /* UTIL_H */
