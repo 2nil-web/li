@@ -437,14 +437,9 @@ void options::parse()
 }
 
 // Make Windows behave as Linux with Control-D in stdin
-bool my_getline(std::istream &is, std::string &s)
+bool my_getline(std::istream &is, std::string &s, char delim='\n')
 {
-  char delim;
-#ifndef _WIN32
-  delim = '\n';
-#else
-  delim = '\r';
-
+#ifdef _WIN32
   if (&is == &std::cin)
   {
     int ch;
@@ -453,6 +448,7 @@ bool my_getline(std::istream &is, std::string &s)
     for (;;)
     {
       ch = _getch();
+      if (ch == '\r' && s.back() == '\n') continue; // Ignore \r under Windows if it is preceded by \n ...
       if (s.empty() && ch == 4)
         return false; // Control-D detected
       if ((char)ch == delim)
@@ -483,7 +479,7 @@ void options::parse(std::istream &is)
 
   for (;;)
   {
-    std::cout << prompt;
+    if (&is == &std::cin) std::cout << prompt;
 
     if (!my_getline(is, s))
       break;
@@ -526,9 +522,11 @@ void options::parse(std::istream &is)
 
 void options::parse(std::filesystem::path path)
 {
-  std::ifstream file(path);
-  if (file)
+  std::ifstream file(path, std::ios::binary);
+  if (file) {
+//    std::cout << "Parsing file " << path << std::endl;
     parse(file);
+  }
   file.close();
 }
 

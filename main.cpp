@@ -13,6 +13,17 @@
 #include "util.h"
 
 std::map<std::string, std::string> sym_table;
+bool numbering = false;
+
+bool is_varname(std::string s)
+{
+  for(auto c:s)
+  {
+    if (!isalnum(c) && c != '_') return false;
+  }
+
+  return true;
+}
 
 bool setvar(std::string expr)
 {
@@ -24,8 +35,10 @@ bool setvar(std::string expr)
     return false;
 
   trim(val, "\"");
-  if (my_getenv(var).empty() || !my_setenv(var, val))
-    sym_table[var] = val;
+  if (my_getenv(var).empty() || !my_setenv(var, val)) {
+    if (is_varname(var)) sym_table[var] = val;
+    else std::cerr << "Not a correct var name '" << var << "'" << std::endl;
+  }
 
   return true;
 }
@@ -46,16 +59,18 @@ std::string ret_expansion(std::string var, char c)
   if (!var.empty())
   {
     val = my_getenv(var);
-    if (val.empty())
-      ret += sym_table[var];
-    else
+    if (val.empty()) {
+      if (sym_table.count(var)) ret += sym_table[var];
+    } else
       ret += val;
   }
 
+  if (ret.empty()) std::cerr << "Var name '" << var << "' expands to empty value." << std::endl;
   ret += c;
   return ret;
 }
 
+size_t line_number=1;
 std::string expand(std::string expr)
 {
   trim(expr, "\"");
@@ -79,6 +94,7 @@ std::string expand(std::string expr)
           i++;
           if (expr[i] == '}' || i >= expr.size())
           {
+            if (expr[i] == '}') i++;
             res += ret_expansion(var, expr[i]);
             break;
           }
@@ -92,7 +108,7 @@ std::string expand(std::string expr)
         for (;;)
         {
           i++;
-          if (!isalpha(expr[i]) || isspace(expr[i]) || i >= expr.size())
+          if ((!isalnum(expr[i]) && expr[i] != '_') || isspace(expr[i]) || i >= expr.size())
           {
             res += ret_expansion(var, expr[i]);
             break;
@@ -108,6 +124,7 @@ std::string expand(std::string expr)
     }
   }
 
+  if (numbering) res=std::to_string(line_number++) + ':' + res;
   return res;
 }
 
@@ -120,11 +137,13 @@ int main(int argc, char **argv, char **)
                 option_info(
                     'i', "interp", [&myopt](s_opt_params &) -> void { myopt.parse(std::cin); }, "Enter interpreter mode.", no_arg, option),
                 option_info(
+                    'n', "num", [](s_opt_params &) -> void { numbering=true; }, "Prepend resulting line(s) by a number.", no_arg, option),
+                option_info(
                     's', "set", [](s_opt_params &p) -> void { setvar(p.val); }, "Set a value to a variable in the form 'set var=val'.", required, interp),
                 option_info(
                     'u', "unset", [](s_opt_params &p) -> void { unsetvar(p.val); }, "Unset a variable in the form 'unset var'.", required, interp),
                 option_info(
-                    'e', "println", [](s_opt_params &p) -> void { std::cout << expand(p.val) << std::endl; }, "Echo the provided parameter(s) and add a carriage return. Variable names must start with '$' and are expanded to their value", optional, interp),
+                    'e', "println", [](s_opt_params &p) -> void { std::cout << expand(p.val) << std::endl; }, "Echo the provided parameter(s) and add a carriage return. Variable names must start with '$' or be formed as follow:'${var_name}'. And they are expanded to their value", optional, interp),
                 option_info(
                     'w', "print", [](s_opt_params &p) -> void { std::cout << expand(p.val) << std::flush; }, "Same as 'println' without adding a carriage return.", optional, interp),
                 option_info(
