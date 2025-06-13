@@ -1,0 +1,8 @@
+
+set toto_2="toto tutu"
+e $toto_2
+e $toto_2 tutu ta
+e ${toto_2}
+e $toto_2 tutu ta
+e $toto_2tutu ta
+e ${toto_2}tutu ta

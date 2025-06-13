@@ -74,7 +74,7 @@ void split_1st(std::string &r1, std::string &r2, std::string s, char c)
 }
 
 // Get env var val if exists else empty string
-std::string my_getenv(const std::string var)
+std::string envvar_get(const std::string var)
 {
   char *pVal = nullptr;
   std::string val = {};
@@ -102,7 +102,7 @@ std::string my_getenv(const std::string var)
 
 // Set env var
 // Return true if OK else false
-bool my_setenv(const std::string var, const std::string val)
+bool envvar_set(const std::string var, const std::string val)
 {
 #ifdef _WIN32
   return SetEnvironmentVariable(var.c_str(), val.c_str()) != 0;
