@@ -18,8 +18,6 @@ else
 	GCC_BUILD_DIR=build/gcc/${OS}
 endif
 
-CLANG_FORMAT=clang-format -style="{ BasedOnStyle: Microsoft, ColumnLimit: 256, IndentWidth: 2, TabWidth: 2, UseTab: Never }" --sort-includes -i
-
 SRCS=main.cpp util.cpp options.cpp
 OBJS=$(patsubst %.cpp,${GCC_BUILD_DIR}/%.o,${SRCS})
 PREFIX=li
@@ -46,7 +44,7 @@ ${GCC_TARGET} : version.h ${OBJS}
 
 format :
 	@echo "Formatting all the .cpp and .h files with clang"
-	@${CLANG_FORMAT} *.cpp *.h
+	@clang-format -style="{ BasedOnStyle: Microsoft, ColumnLimit: 256, IndentWidth: 2, TabWidth: 2, UseTab: Never }" --sort-includes -i *.cpp *.h
 
 
 cfg:
